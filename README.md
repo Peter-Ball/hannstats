@@ -1,0 +1,3 @@
+# Hannstats
+
+Hello! This is the repository for a video project I'm working on exploring character and adaptation in the _Hannibal_ universe. The video will be released April 22nd, and should give more context for the code here. As I work on the project, I will update this readme to explain what I'm doing. Eventually, this should read like documentation, so video viewers can recreate my experiments.
