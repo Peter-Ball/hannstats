@@ -1,5 +1,6 @@
 import regex
 import pandas as pd
+import json
 
 def _get_candidates(screenplay):
     CHAR_NAME_SPACES = 26
@@ -58,5 +59,40 @@ def screenplay_to_dialog_table(screenplay):
 
     return df
 
+def _get_character_dialog(character):
+    # Given a dict from the 'characters' list of a booknlp .book file, return all dialog as list of tuples of form
+    # (character_name, line_of_dialog, index_of_line)
+
+    name = character['names'][0]['n']
+    dialog = []
+    for line in character['speaking']:
+        dialog.append((name, line['w'], line['i']))
+
+    return dialog
 
     
+def load_bnlp_dialog(book_path):
+    '''
+    Given the path to a .book file produced by booknlp, return a pandas dataframe with
+    ordered dialog instances and their speakers.
+
+    book_path: path to the .book file
+    '''
+
+    with open(book_path) as fp:
+        book = json.load(fp)
+
+    characters = book['characters']
+
+    # Get one big list of all dialog
+    all_dialog = [dialog for dialog_list in [_get_character_dialog(char) for char in characters] for dialog in dialog_list]
+
+    # Sort all_dialog by index
+    all_dialog = sorted(all_dialog, key=(lambda x: x[2]))
+
+    # Make it a dataframe
+    df = pd.DataFrame(all_dialog, columns=["speaker", "dialog", "index"])
+
+    return df
+
+
