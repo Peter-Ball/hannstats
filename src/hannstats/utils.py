@@ -85,7 +85,7 @@ def load_bnlp_dialog(book_path):
     characters = book['characters']
 
     # Get one big list of all dialog
-    all_dialog = [dialog for dialog_list in [_get_character_dialog(char) for char in characters] for dialog in dialog_list]
+    all_dialog = [dialog for dialog_list in [_get_character_dialog(char) for char in characters if len(char['names']) > 0] for dialog in dialog_list]
 
     # Sort all_dialog by index
     all_dialog = sorted(all_dialog, key=(lambda x: x[2]))
@@ -95,4 +95,10 @@ def load_bnlp_dialog(book_path):
 
     return df
 
+def clean_AO3_text(text):
+    # Given text from an AO3 story, clean up unwanted HTML content
 
+    expr = regex.compile(r"<[^>]*>")
+    cleaned = regex.sub(expr, "", text)
+
+    return cleaned
