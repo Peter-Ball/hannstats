@@ -102,3 +102,8 @@ def clean_AO3_text(text):
     cleaned = regex.sub(expr, "", text)
 
     return cleaned
+
+def flip_mapping(mapping):
+    # given a mapping of string to list of string, return an inverse mapping. Assumes that lists are mutually exclusive
+
+    return {e: k for k, v in mapping.items() for e in v}
