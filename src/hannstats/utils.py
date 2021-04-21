@@ -107,3 +107,13 @@ def flip_mapping(mapping):
     # given a mapping of string to list of string, return an inverse mapping. Assumes that lists are mutually exclusive
 
     return {e: k for k, v in mapping.items() for e in v}
+
+def load_texts(filepaths):
+    texts = []
+    for path in filepaths:
+        with open(path) as fp:
+            lines = fp.readlines()
+            text = '\n'.join(lines)
+            texts.append(text.lower())
+
+    return texts
