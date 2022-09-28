@@ -1,4 +1,4 @@
-# Given a .book file or screenplay .txt, produce a cleaned dialog table
+# Given a directory of .book files or screenplay .txts, produce a cleaned dialog table
 import pandas as pd
 from hannstats import utils
 from argparse import ArgumentParser
@@ -13,7 +13,9 @@ def main():
 
     parser.add_argument("datapath", help="path to a directory of .book or .txt files")
     parser.add_argument("outdir", help="output directory")
-    parser.add_argument("--type", help="Is it a .book file or a screenplay? Options: ['book', 'screenplay']", required=True)
+    parser.add_argument("--type", 
+                        help="Is it a .book file or a screenplay? Options: ['book', 'screenplay']", 
+                        required=True)
 
     args = parser.parse_args()
     files = os.listdir(args.datapath)

@@ -34,6 +34,15 @@ def line(x,y, ax=None, **plt_kwargs):
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     return(ax)
 
+def barh(x,y,ax=None, **plt_kwargs):
+    if ax is None:
+        ax = plt.gca()
+    # Check for user-defined color; else use default
+    color = plt_kwargs.pop('color', color_palette[0])
+    ax.barh(x, y, color=color, **plt_kwargs)
+    sns.despine(right=True, top=True)
+    return(ax)
+
 
 
 if __name__ == "__main__":

@@ -2,13 +2,13 @@
 	"Hannibal": ["dr lecter", "dr. lecter", "hannibal lecter", "lecter", "lektor", "hannibal", "hannibal (cont’d)"],
 	"Will Graham": ["will", "graham", "will graham", "will graham (cont’d)"],
 	"Jack Crawford": ["jack", "crawford", "jack crawford", "jack crawford (cont’d)"],
-	"Dr. Bloom": ["alana", "dr alana bloom", "alan", "bloom", "alana bloom", "alana bloom (cont’d)"],
+	"Dr. Bloom": ["alana", "dr alana bloom", "dr. bloom", "alan", "bloom", "alana bloom", "alana bloom (cont’d)"],
 	"Beverly Katz": ["beverly", "katz", "beverly katz", "bev"],
 	"Bedelia Du Maurier": ["bedelia", "du maurier", "maurier", "bedelia du maurier"],
 	"Freddie Lounds": ["freddie", "lounds", "freddie lounds"],
 	"Abigail Hobbs": ["abigail", "abigail hobbs"],
 	"Jimmy Price": ["jimmy", "price", "jimmy price"],
-	"Frederick Chilton": ["frederick", "chilton", "frederick chilton"],
+	"Frederick Chilton": ["frederick", "chilton", "frederick chilton", "dr. chilton"],
 	"Brian Zeller": ["brian", "zeller", "brian zeller"],
 	"Clarice Starling": ["clarice", "starling", "agent starling", "clarice starling"],
 	"Mason Verger": ["mason", "mason verger"],
@@ -33,5 +33,7 @@
 	"Garret Jacob Hobbs": ["hobbs", "garret jacob hobbs", "jacob"],
 	"Chiyoh": ["chiyoh"],
 	"Noble Pilcher": ["pilcher"],
-	"John Brigham": ["brigham"]
+	"John Brigham": ["brigham"],
+	"Dr. Chilton": ["dr. chilton"],
+	"Dr. Gideon": ["dr. gideon"]
 }

@@ -1,19 +1,36 @@
 import regex
 import pandas as pd
+import numpy as np
 import json
+from itertools import combinations
+from collections import defaultdict
+from collections import Counter
+import string
+
+def _get_snippet(sp, start, end):
+    # Given a screenplay and two line numbers,
+    # Get the text between the line numbers
+    lines = sp.split('\n')
+    output = '\n'.join(lines[start-1:end-1])
+    return output
+
+def _clean_screenplay(sp):
+    # Remove some garbage
+    printable = set(string.printable)
+    printable.remove(u'\x0c')
+    sp = ''.join(filter(lambda x: x in printable, sp))
+    sp = regex.sub(r"^[ ]*HANNIBAL (- PROD|Ep). #\d+.*$\n", "", sp, flags=regex.MULTILINE)
+    return sp
 
 def _get_candidates(screenplay):
-    CHAR_NAME_SPACES = 26
-    DIALOG_SPACES = 15
-
     # First, remove interjected stage directions
     screenplay = regex.sub(r'^[ ]+\([\w .!?,’]+\)$\n', "", screenplay, flags=regex.MULTILINE)
 
     # Then, find chunks of text that look like dialog
-    candidates = regex.findall(r'((?<=^[ ]{10,})[A-Z][A-Z ]+(\(CONT’D\))?$)\n(^([ ]{5,}\w[\w .!?,’“”]+$\n)+)', # Get lines of dialog
+    candidates = regex.findall(r'((?<=^[ ]{10,})[A-Z][A-Z .]+(\(CONT’D\))?$)\n(^([ ]{6,}.[^A-Z].+$\n)+)', # Get lines of dialog
                                screenplay,
                                flags=regex.MULTILINE)
-
+    #print(len(candidates))
     # Extract speaker and dialog
     speaker = [cand[0] for cand in candidates]
     dialog = [cand[2] for cand in candidates]
@@ -52,7 +69,7 @@ def screenplay_to_dialog_table(screenplay):
     screenplay: string; works best on direct pdf-to-text output
     '''
     
-
+    screenplay = _clean_screenplay(screenplay)
     data = _get_candidates(screenplay)
 
     df = pd.DataFrame(data)
@@ -112,8 +129,133 @@ def load_texts(filepaths):
     texts = []
     for path in filepaths:
         with open(path) as fp:
-            lines = fp.readlines()
-            text = '\n'.join(lines)
-            texts.append(text.lower())
+            text = fp.read()
+            texts.append(text)
 
     return texts
+
+def tokens_to_network(tokens_path, book_path,  character_bins, dist=15):
+    # Given the path to a .tokens and corresponding .book file produced by booknlp, return a dataframe with the social network for that graph
+    # dist: upper limit for number of words between two characters to constitute a mention
+
+    tok = pd.read_csv(tokens_path, sep='\t')
+    with open(book_path) as fp:
+        book = json.load(fp)['characters']
+    char_ids = tok['characterId']
+    char_ids = char_ids[~(char_ids == 'O')]
+    char_ids = char_ids.map(lambda x: book[int(x)]['names'][0]['n'].lower() if x != '-1' else x)
+    cbins = load_character_bins(character_bins)
+    char_ids = char_ids.map(lambda x: cbins[x] if x in cbins else x.title())
+
+    edges = defaultdict(Counter)
+
+
+    # Slide a window over the character Ids
+    for i in range(len(char_ids)-dist):
+        window = char_ids[i:i+dist]
+
+        characters = window.unique()
+        characters = characters[characters != '-1']
+        pairs = combinations(characters, 2)
+        for pair in pairs:
+            # Get character names
+            name1 = pair[0]
+            name2 = pair[1]
+            # increase edge weight between the two characters by 1
+            edges[name1][name2] += 1
+
+    # Now just make the edges dict into a dataframe
+    data = {"source": [], "target": [], "type": [], "weight": []}
+
+    for char, edge in edges.items():
+        for char2, weight in edge.items():
+            data["source"].append(char)
+            data["target"].append(char2)
+            data["type"].append("undirected")
+            data["weight"].append(weight)
+
+    df = pd.DataFrame(data)
+    return df
+
+def _get_scenes(script):
+    scenemarker_1 = regex.compile(r"^([AB]?\d+)[ ]*[A-Z .\-’,]+\1$", flags=regex.MULTILINE)
+    scenemarker_2 = regex.compile(r"^[ ]*(?:INT.|EXT.)[A-Z .\-’,]+$", flags=regex.MULTILINE)
+    if regex.search(scenemarker_1, script):
+        scenes = regex.split(scenemarker_1, script)[0::2]
+        #print("regex 1")
+    elif regex.search(scenemarker_2, script):
+        scenes = regex.split(scenemarker_2, script)
+        #rint("regex 2")
+    return scenes
+
+def load_character_bins(cbin_path):
+    # Load up the character_bins file and reverse the mapping
+    with open(cbin_path) as fp:
+        cbins = json.load(fp)
+
+    cbins = flip_mapping(cbins)
+    return cbins
+
+def script_to_network(script, character_bins):
+    # Given a Hannibal script as a string, make a graph frame based on characters who appear in the same scene as one another
+    # Also include character_bins path for binning
+    cbins = load_character_bins(character_bins)
+
+    script = _clean_screenplay(script)
+    #print(len(script))
+    scenes = _get_scenes(script)
+
+    scene_dialogs = [screenplay_to_dialog_table(s) for s in scenes]
+    #print("boink", scenes[1])
+
+    for scene in scene_dialogs:
+        scene['speaker'] = scene['speaker'].map(lambda x: cbins[x.lower()] if x.lower() in cbins else x.title())
+
+    edges = defaultdict(Counter)
+
+    for scene in scene_dialogs:
+        characters = scene['speaker'].unique()
+        characters = sorted(characters)
+        pairs = combinations(characters, 2)
+
+        for pair in pairs:
+            edges[pair[0]][pair[1]] += 1
+
+    # Now just make the edges dict into a dataframe
+    data = {"source": [], "target": [], "type": [], "weight": []}
+
+    for char, edge in edges.items():
+        for char2, weight in edge.items():
+            data["source"].append(char)
+            data["target"].append(char2)
+            data["type"].append("undirected")
+            data["weight"].append(weight)
+
+    df = pd.DataFrame(data)
+    return df
+
+def fandom_network(fandom, character_bins):
+    # Given the complete dict of a fandom, return the graph frame of characters co-occurring in stories together
+    cbins = load_character_bins(character_bins)
+    edges = defaultdict(Counter)
+
+    for fic in fandom:
+        characters = sorted(fic['characters'])
+        characters = map(lambda x: cbins[x.lower()] if x.lower() in cbins else x, characters)
+        pairs = combinations(characters, 2)
+
+        for pair in pairs:
+            edges[pair[0]][pair[1]] += 1
+
+    # Now just make the edges dict into a dataframe
+    data = {"source": [], "target": [], "type": [], "weight": []}
+
+    for char, edge in edges.items():
+        for char2, weight in edge.items():
+            data["source"].append(char)
+            data["target"].append(char2)
+            data["type"].append("undirected")
+            data["weight"].append(weight)
+
+    df = pd.DataFrame(data)
+    return df
